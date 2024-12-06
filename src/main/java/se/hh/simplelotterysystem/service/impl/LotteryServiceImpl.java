@@ -1,4 +1,6 @@
-package se.hh.simplelotterysystem.service;
+package se.hh.simplelotterysystem.service.impl;
+
+import se.hh.simplelotterysystem.service.LotteryService;
 
 public class LotteryServiceImpl implements LotteryService {
 

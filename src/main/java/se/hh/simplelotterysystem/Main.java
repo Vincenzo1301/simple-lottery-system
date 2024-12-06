@@ -2,7 +2,7 @@ package se.hh.simplelotterysystem;
 
 import se.hh.simplelotterysystem.server.Server;
 import se.hh.simplelotterysystem.service.LotteryService;
-import se.hh.simplelotterysystem.service.LotteryServiceImpl;
+import se.hh.simplelotterysystem.service.impl.LotteryServiceImpl;
 
 public class Main {
 
