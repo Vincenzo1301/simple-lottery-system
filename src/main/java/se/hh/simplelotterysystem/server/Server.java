@@ -1,6 +1,7 @@
 package se.hh.simplelotterysystem.server;
 
 import static se.hh.simplelotterysystem.enums.LoggingType.ERROR;
+import static se.hh.simplelotterysystem.enums.LoggingType.INFO;
 import static se.hh.simplelotterysystem.util.Logger.log;
 
 import java.io.IOException;
@@ -8,8 +9,8 @@ import java.net.ServerSocket;
 import java.util.ArrayList;
 import java.util.List;
 import se.hh.simplelotterysystem.data.DrawingRegistrationRequest;
+import se.hh.simplelotterysystem.data.DrawingRegistrationResponse;
 import se.hh.simplelotterysystem.data.HistoricalDataRequest;
-import se.hh.simplelotterysystem.enums.LoggingType;
 import se.hh.simplelotterysystem.service.LotteryService;
 
 public class Server implements ClientSessionEventHandler {
@@ -23,7 +24,7 @@ public class Server implements ClientSessionEventHandler {
       this.serverSocket = new ServerSocket(port);
       this.clientSessions = new ArrayList<>();
       this.lotteryService = lotteryService;
-      log(LoggingType.INFO, "Server started on port " + port);
+      log(INFO, "Server started on port " + port);
     } catch (IOException e) {
       throw new RuntimeException("[ERROR]: Failed to start server on port " + port, e);
     }
@@ -42,10 +43,14 @@ public class Server implements ClientSessionEventHandler {
   }
 
   @Override
-  public void onDrawingRegistration(ClientSession session, DrawingRegistrationRequest request) {}
+  public DrawingRegistrationResponse onDrawingRegistration(ClientSession session, DrawingRegistrationRequest request) {
+    return lotteryService.drawingRegistration(request);
+  }
 
   @Override
-  public void onRequestHistoricalData(ClientSession session, HistoricalDataRequest request) {}
+  public void onRequestHistoricalData(ClientSession session, HistoricalDataRequest request) {
+    // TODO: Handle historical data request
+  }
 
   @Override
   public void onClientSessionClosed(ClientSession session) {

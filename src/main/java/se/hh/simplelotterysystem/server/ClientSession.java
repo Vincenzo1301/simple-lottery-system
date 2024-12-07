@@ -10,6 +10,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import se.hh.simplelotterysystem.data.DrawingRegistrationRequest;
+import se.hh.simplelotterysystem.data.DrawingRegistrationResponse;
 import se.hh.simplelotterysystem.data.HistoricalDataRequest;
 
 public class ClientSession extends Thread {
@@ -36,7 +37,16 @@ public class ClientSession extends Thread {
       while (true) {
         Object input = in.readObject();
         if (input instanceof DrawingRegistrationRequest request) {
-          eventHandler.onDrawingRegistration(this, request);
+          log(
+              INFO,
+              "Drawing registration request received from client '"
+                  + request.email()
+                  + "' with numbers: "
+                  + request.drawingNumbers()
+                  + " at time: "
+                  + request.dateTime());
+          DrawingRegistrationResponse response = eventHandler.onDrawingRegistration(this, request);
+          sendResponse(response);
         } else if (input instanceof HistoricalDataRequest request) {
           eventHandler.onRequestHistoricalData(this, request);
         } else {
@@ -48,6 +58,15 @@ public class ClientSession extends Thread {
       eventHandler.onClientSessionClosed(this);
     } catch (Exception e) {
       log(ERROR, "Something went wrong: " + e.getMessage());
+    }
+  }
+
+  private void sendResponse(Object response) {
+    try {
+      out.writeObject(response);
+      out.flush();
+    } catch (IOException e) {
+      log(ERROR, "Failed to send response to client: " + e.getMessage());
     }
   }
 }

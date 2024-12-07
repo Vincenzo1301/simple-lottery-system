@@ -1,3 +1,5 @@
 package se.hh.simplelotterysystem.data;
 
-public record HistoricalDataRequest() {}
+import java.io.Serializable;
+
+public record HistoricalDataRequest() implements Serializable {}
