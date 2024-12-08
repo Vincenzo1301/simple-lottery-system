@@ -147,9 +147,15 @@ public class LotteryServiceImpl implements LotteryService {
   }
 
   private void handleDrawingJobResult(DrawingJobResult result) {
-    updateHistory(result.timestamp(), result.winners(), result.luckyNumber());
-    adjustAwardAmounts(result.timestamp(), result.winners().size());
-    notifyWinners(result.timestamp(), result.winners());
+    if (result.amountOfParticipants() != 0) {
+      updateHistory(result.timestamp(), result.winners(), result.luckyNumber());
+      if (!result.winners().isEmpty()) {
+        notifyWinners(result.winners(), result.luckyNumber(), awardAmounts.get(result.timestamp()));
+      }
+      adjustAwardAmounts(result.timestamp(), result.winners().size());
+    } else {
+      log(INFO, "No participants for drawing at " + result.timestamp());
+    }
   }
 
   private DrawingRegistrationResponse validateRequest(
@@ -225,29 +231,37 @@ public class LotteryServiceImpl implements LotteryService {
     return localDateTimes;
   }
 
-  private void updateHistory(LocalDateTime timestamp, List<String> winners, Integer drawnLuckyNumber) {
-    history.put(timestamp, new LotteryHistory(winners, drawnLuckyNumber, awardAmounts.get(timestamp)));
+  private void updateHistory(
+      LocalDateTime timestamp, List<String> winners, Integer drawnLuckyNumber) {
+    history.put(
+        timestamp, new LotteryHistory(winners, drawnLuckyNumber, awardAmounts.get(timestamp)));
     log(INFO, "History updated!");
   }
 
   private void adjustAwardAmounts(LocalDateTime timestamp, int amountOfWinner) {
     if (awardAmounts.containsKey(timestamp) && amountOfWinner > 0) {
-      log(INFO, "The winners are: " + amountOfWinner);
-
+      awardAmounts.put(timestamp, 0.0);
     } else if (awardAmounts.containsKey(timestamp) && amountOfWinner == 0) {
       log(INFO, "No winners this time! The money will be carried over to the next drawing.");
 
       double awardAmount = awardAmounts.get(timestamp);
 
-      LocalDateTime updatedLocalDateTime = timestamp.plusHours(1);
+      // TODO: LocalDateTime updatedLocalDateTime = timestamp.plusHours(1);
+      LocalDateTime updatedLocalDateTime = timestamp.plusMinutes(1); // test purposes
 
       awardAmounts.put(updatedLocalDateTime, awardAmounts.get(updatedLocalDateTime) + awardAmount);
-    } else {
-      log(INFO, "No people registered for this time slot and no money to carry over.");
     }
   }
 
-  private void notifyWinners(LocalDateTime timestamp, List<String> winners) {
+  private void notifyWinners(List<String> winners, Integer drawnLuckyNumber, double prizePool) {
+    log(
+        INFO,
+        "The winners are: "
+            + winners
+            + " with the lucky number: "
+            + drawnLuckyNumber
+            + " and the prize pool per person: "
+            + prizePool / winners.size());
     // TODO: Notify winners via email
   }
 }

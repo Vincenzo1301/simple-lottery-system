@@ -27,20 +27,19 @@ public class DrawingJob implements Job {
 
     List<Map<String, Set<Integer>>> currentDrawingSlots =
         obtainCurrentDrawingSlots(context, timestamp);
-
     if (currentDrawingSlots == null) {
-      context.setResult(new DrawingJobResult(timestamp, emptyList(), null));
+      context.setResult(new DrawingJobResult(timestamp, emptyList(), null, 0));
       return;
     }
 
     int random = generateRandomNumber();
     List<String> winners = obtainWinners(currentDrawingSlots, random);
+    int amountOfParticipants = currentDrawingSlots.stream().mapToInt(Map::size).sum();
 
-    context.setResult(new DrawingJobResult(timestamp, winners, random));
     if (winners.isEmpty()) {
-      context.setResult(new DrawingJobResult(timestamp, emptyList(), random));
+      context.setResult(new DrawingJobResult(timestamp, emptyList(), random, amountOfParticipants));
     } else {
-      context.setResult(new DrawingJobResult(timestamp, (winners), random));
+      context.setResult(new DrawingJobResult(timestamp, winners, random, amountOfParticipants));
     }
   }
 
@@ -54,7 +53,7 @@ public class DrawingJob implements Job {
   }
 
   private int generateRandomNumber() {
-    //return (int) (Math.random() * 256);
+    // return (int) (Math.random() * 256);
     return 5;
   }
 
