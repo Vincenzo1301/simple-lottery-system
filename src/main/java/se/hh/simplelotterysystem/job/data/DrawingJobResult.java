@@ -1,4 +1,4 @@
-package se.hh.simplelotterysystem.job;
+package se.hh.simplelotterysystem.job.data;
 
 import java.time.LocalDateTime;
 import java.util.List;

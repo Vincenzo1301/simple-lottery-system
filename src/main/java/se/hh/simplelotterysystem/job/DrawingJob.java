@@ -14,6 +14,7 @@ import java.util.Set;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
+import se.hh.simplelotterysystem.job.data.DrawingJobResult;
 
 public class DrawingJob implements Job {
 
@@ -53,7 +54,7 @@ public class DrawingJob implements Job {
   }
 
   private int generateRandomNumber() {
-    // TODO: return (int) (Math.random() * 256);
+    //return (int) (Math.random() * 256);
     return 5;
   }
 

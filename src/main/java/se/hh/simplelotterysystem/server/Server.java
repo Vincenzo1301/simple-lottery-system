@@ -1,7 +1,6 @@
 package se.hh.simplelotterysystem.server;
 
 import static se.hh.simplelotterysystem.enums.LoggingType.ERROR;
-import static se.hh.simplelotterysystem.enums.LoggingType.INFO;
 import static se.hh.simplelotterysystem.util.Logger.log;
 
 import java.io.IOException;
