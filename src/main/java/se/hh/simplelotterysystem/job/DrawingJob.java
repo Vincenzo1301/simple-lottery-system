@@ -2,6 +2,7 @@ package se.hh.simplelotterysystem.job;
 
 import static java.time.LocalDateTime.now;
 import static java.time.format.DateTimeFormatter.ofPattern;
+import static java.util.Collections.emptyList;
 import static se.hh.simplelotterysystem.enums.LoggingType.INFO;
 import static se.hh.simplelotterysystem.util.Logger.log;
 
@@ -13,41 +14,42 @@ import java.util.Set;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
 
 public class DrawingJob implements Job {
 
   @Override
-  public void execute(JobExecutionContext context) throws JobExecutionException {
+  public void execute(JobExecutionContext context) {
     System.out.println("=========================================================================");
-    log(INFO, "🎰💯 Drawing job for time slot " + now().format(ofPattern("yyyy-MM-dd'T'HH:mm")));
-    List<Map<String, Set<Integer>>> currentDrawingSlots = obtainCurrentDrawingSlots(context);
+    log(INFO, "Drawing job for time slot " + now().format(ofPattern("yyyy-MM-dd'T'HH:mm")));
+
+    LocalDateTime timestamp = now().truncatedTo(ChronoUnit.MINUTES);
+
+    List<Map<String, Set<Integer>>> currentDrawingSlots =
+        obtainCurrentDrawingSlots(context, timestamp);
+
     if (currentDrawingSlots == null) {
-      log(INFO, "🎰 No people registered for this time slot.");
-      System.out.println("=========================================================================");
+      context.setResult(new DrawingJobResult(timestamp, emptyList()));
       return;
     }
 
     int random = generateRandomNumber();
     List<String> winners = obtainWinners(currentDrawingSlots, random);
 
+    context.setResult(new DrawingJobResult(timestamp, winners));
     if (winners.isEmpty()) {
-      log(INFO, "🎰 No winners this time! The random number was: " + random);
+      context.setResult(new DrawingJobResult(timestamp, emptyList()));
     } else {
-      log(INFO, "🏆🎖️ The winners are: " + winners + " with number " + random);
+      context.setResult(new DrawingJobResult(timestamp, (winners)));
     }
-    System.out.println("=========================================================================");
-
-    // TODO: Send email to winners!
   }
 
   @SuppressWarnings({"unchecked"})
-  private List<Map<String, Set<Integer>>> obtainCurrentDrawingSlots(JobExecutionContext context) {
+  private List<Map<String, Set<Integer>>> obtainCurrentDrawingSlots(
+      JobExecutionContext context, LocalDateTime timestamp) {
     JobDataMap dataMap = context.getJobDetail().getJobDataMap();
     Map<LocalDateTime, List<Map<String, Set<Integer>>>> drawingSlots =
         (Map<LocalDateTime, List<Map<String, Set<Integer>>>>) dataMap.get("drawingSlots");
-    LocalDateTime truncatedTimestamp = now().truncatedTo(ChronoUnit.MINUTES);
-    return drawingSlots.get(truncatedTimestamp);
+    return drawingSlots.get(timestamp);
   }
 
   private int generateRandomNumber() {

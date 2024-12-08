@@ -24,7 +24,6 @@ public class Server implements ClientSessionEventHandler {
       this.serverSocket = new ServerSocket(port);
       this.clientSessions = new ArrayList<>();
       this.lotteryService = lotteryService;
-      log(INFO, "Server started on port " + port);
     } catch (IOException e) {
       throw new RuntimeException("[ERROR]: Failed to start server on port " + port, e);
     }

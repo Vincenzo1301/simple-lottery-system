@@ -1,0 +1,6 @@
+package se.hh.simplelotterysystem.job;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+public record DrawingJobResult(LocalDateTime timestamp, List<String> winners) {}
