@@ -26,16 +26,18 @@ import org.quartz.JobListener;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.impl.StdSchedulerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
 import se.hh.simplelotterysystem.data.DrawingRegistrationRequest;
 import se.hh.simplelotterysystem.data.DrawingRegistrationResponse;
 import se.hh.simplelotterysystem.data.HistoricalDataDto;
-import se.hh.simplelotterysystem.data.HistoricalDataRequest;
 import se.hh.simplelotterysystem.data.HistoricalDataResponse;
 import se.hh.simplelotterysystem.job.DrawingJob;
 import se.hh.simplelotterysystem.job.data.DrawingJobResult;
 import se.hh.simplelotterysystem.model.LotteryHistory;
 import se.hh.simplelotterysystem.service.LotteryService;
 
+@Service
 public class LotteryServiceImpl implements LotteryService {
 
   private static final double PARTICIPATION_FEE = 100.0;
@@ -56,30 +58,32 @@ public class LotteryServiceImpl implements LotteryService {
   }
 
   @Override
-  public DrawingRegistrationResponse drawingRegistration(
+  public ResponseEntity<DrawingRegistrationResponse> drawingRegistration(
       DrawingRegistrationRequest registrationRequest) {
     String email = registrationRequest.email();
     Set<Integer> numbers = registrationRequest.drawingNumbers();
     LocalDateTime dateTime = registrationRequest.dateTime();
 
-    DrawingRegistrationResponse validationResponse = validateRequest(email, numbers, dateTime);
+    ResponseEntity<DrawingRegistrationResponse> validationResponse =
+        validateRequest(email, numbers, dateTime);
     if (validationResponse != null) {
       return validationResponse;
     }
 
     registerDrawing(email, numbers, dateTime);
 
-    return new DrawingRegistrationResponse(200, "Registration successful");
+    return ResponseEntity.ok(new DrawingRegistrationResponse("Registration successful"));
   }
 
   @Override
-  public HistoricalDataResponse retrieveHistoricalData(HistoricalDataRequest request) {
-    LocalDateTime startLocalDateTime = request.startTimestamp().truncatedTo(ChronoUnit.MINUTES);
-    LocalDateTime endLocalDateTime = request.endTimestamp().truncatedTo(ChronoUnit.MINUTES);
+  public ResponseEntity<HistoricalDataResponse> retrieveHistoricalData(
+      LocalDateTime startTimestamp, LocalDateTime endTimestamp) {
+    LocalDateTime startLocalDateTime = startTimestamp.truncatedTo(ChronoUnit.MINUTES);
+    LocalDateTime endLocalDateTime = endTimestamp.truncatedTo(ChronoUnit.MINUTES);
     Map<LocalDateTime, HistoricalDataDto> historicalData =
         getHistoricalData(startLocalDateTime, endLocalDateTime);
 
-    return new HistoricalDataResponse(200, "Historical data retrieved", historicalData);
+    return ResponseEntity.ok(new HistoricalDataResponse(historicalData));
   }
 
   private Scheduler initializeScheduler() throws SchedulerException {
@@ -97,9 +101,6 @@ public class LotteryServiceImpl implements LotteryService {
             .withIdentity("drawingJob", "lotteryGroup")
             .usingJobData(jobDataMap)
             .build();
-
-    // eyery hour: 0 0 * * * ?
-    // every minute: 0 * * * * ?
 
     CronTrigger trigger =
         newTrigger()
@@ -158,14 +159,16 @@ public class LotteryServiceImpl implements LotteryService {
     }
   }
 
-  private DrawingRegistrationResponse validateRequest(
+  private ResponseEntity<DrawingRegistrationResponse> validateRequest(
       String email, Set<Integer> numbers, LocalDateTime dateTime) {
     if (dateTime.isBefore(now())) {
-      return new DrawingRegistrationResponse(400, "Cannot register for past drawing");
+      return ResponseEntity.badRequest()
+          .body(new DrawingRegistrationResponse("Cannot register for past drawing"));
     }
 
     if (numbers.stream().anyMatch(number -> number < 1 || number > 255)) {
-      return new DrawingRegistrationResponse(400, "Number out of range");
+      return ResponseEntity.badRequest()
+          .body(new DrawingRegistrationResponse("Number out of range"));
     }
 
     List<Map<String, Set<Integer>>> slots = drawingSlots.get(dateTime);
@@ -175,7 +178,8 @@ public class LotteryServiceImpl implements LotteryService {
               slot ->
                   slot.containsKey(email)
                       && slot.get(email).stream().anyMatch(numbers::contains))) {
-        return new DrawingRegistrationResponse(400, "Number(s) already registered");
+        return ResponseEntity.badRequest()
+            .body(new DrawingRegistrationResponse("Number(s) already registered"));
       }
     }
 
