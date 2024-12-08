@@ -7,6 +7,7 @@ import static se.hh.simplelotterysystem.enums.LoggingType.INFO;
 import static se.hh.simplelotterysystem.util.Logger.log;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,8 +24,12 @@ import org.quartz.Scheduler;
 import org.quartz.impl.StdSchedulerFactory;
 import se.hh.simplelotterysystem.data.DrawingRegistrationRequest;
 import se.hh.simplelotterysystem.data.DrawingRegistrationResponse;
+import se.hh.simplelotterysystem.data.HistoricalDataDto;
+import se.hh.simplelotterysystem.data.HistoricalDataRequest;
+import se.hh.simplelotterysystem.data.HistoricalDataResponse;
 import se.hh.simplelotterysystem.job.DrawingJob;
 import se.hh.simplelotterysystem.job.DrawingJobResult;
+import se.hh.simplelotterysystem.model.LotteryHistory;
 import se.hh.simplelotterysystem.service.LotteryService;
 
 public class LotteryServiceImpl implements LotteryService {
@@ -33,6 +38,7 @@ public class LotteryServiceImpl implements LotteryService {
 
   private final Scheduler scheduler;
   private final Map<LocalDateTime, List<Map<String, Set<Integer>>>> drawingSlots = new HashMap<>();
+  private final Map<LocalDateTime, LotteryHistory> history = new HashMap<>();
   private final Map<LocalDateTime, Double> awardAmounts = new HashMap<>();
 
   public LotteryServiceImpl() {
@@ -49,12 +55,10 @@ public class LotteryServiceImpl implements LotteryService {
               .usingJobData(jobDataMap)
               .build();
 
-      // every minute - 0 * * * * ?
-      // every hour - 0 0 * * * ?
       CronTrigger trigger =
           newTrigger()
               .withIdentity("drawingTrigger", "lotteryGroup")
-              .withSchedule(cronSchedule("0 * * * * ?"))
+              .withSchedule(cronSchedule("0 0 * * * ?"))
               .forJob(job)
               .build();
 
@@ -80,6 +84,7 @@ public class LotteryServiceImpl implements LotteryService {
                 public void jobWasExecuted(JobExecutionContext context, JobExecutionException e) {
                   DrawingJobResult result = (DrawingJobResult) context.getResult();
 
+                  updateHistory(result.timestamp(), result.winners(), result.luckyNumber());
                   adjustAwardAmounts(result.timestamp(), result.winners().size());
                   notifyWinners(result.timestamp(), result.winners());
                 }
@@ -87,6 +92,13 @@ public class LotteryServiceImpl implements LotteryService {
     } catch (Exception e) {
       throw new RuntimeException("Could not start scheduler", e);
     }
+  }
+
+  private void updateHistory(LocalDateTime timestamp, List<String> winners, Integer integer) {
+    history.put(timestamp, new LotteryHistory(winners, integer, awardAmounts.get(timestamp)));
+    log(
+        INFO,
+        "History updated! The winners are: " + winners + " with the lucky number: " + integer);
   }
 
   private void adjustAwardAmounts(LocalDateTime timestamp, int amountOfWinner) {
@@ -172,5 +184,35 @@ public class LotteryServiceImpl implements LotteryService {
   }
 
   @Override
-  public void retrieveHistoricalData() {}
+  public HistoricalDataResponse retrieveHistoricalData(HistoricalDataRequest request) {
+    LocalDateTime startLocalDateTime = request.startTimestamp().truncatedTo(ChronoUnit.MINUTES);
+    LocalDateTime endLocalDateTime = request.endTimestamp().truncatedTo(ChronoUnit.MINUTES);
+    List<LocalDateTime> localDateTimes = getLocalDateTimes(startLocalDateTime, endLocalDateTime);
+
+    Map<LocalDateTime, HistoricalDataDto> historicalData = new HashMap<>();
+    for (LocalDateTime localDateTime : localDateTimes) {
+      if (history.containsKey(localDateTime)) {
+        LotteryHistory lotteryHistory = history.get(localDateTime);
+        HistoricalDataDto historicalDataDto =
+            new HistoricalDataDto(
+                lotteryHistory.drawnLuckyNumber(),
+                lotteryHistory.winners().size(),
+                lotteryHistory.prizePool());
+        historicalData.put(localDateTime, historicalDataDto);
+      }
+    }
+
+    return new HistoricalDataResponse(200, "Historical data retrieved", historicalData);
+  }
+
+  private List<LocalDateTime> getLocalDateTimes(
+      LocalDateTime startLocalDateTime, LocalDateTime endLocalDateTime) {
+    List<LocalDateTime> localDateTimes = new ArrayList<>();
+    LocalDateTime currentLocalDateTime = startLocalDateTime;
+    while (currentLocalDateTime.isBefore(endLocalDateTime)) {
+      localDateTimes.add(currentLocalDateTime);
+      currentLocalDateTime = currentLocalDateTime.plusHours(1);
+    }
+    return localDateTimes;
+  }
 }

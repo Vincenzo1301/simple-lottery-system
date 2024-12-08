@@ -28,18 +28,18 @@ public class DrawingJob implements Job {
         obtainCurrentDrawingSlots(context, timestamp);
 
     if (currentDrawingSlots == null) {
-      context.setResult(new DrawingJobResult(timestamp, emptyList()));
+      context.setResult(new DrawingJobResult(timestamp, emptyList(), null));
       return;
     }
 
     int random = generateRandomNumber();
     List<String> winners = obtainWinners(currentDrawingSlots, random);
 
-    context.setResult(new DrawingJobResult(timestamp, winners));
+    context.setResult(new DrawingJobResult(timestamp, winners, random));
     if (winners.isEmpty()) {
-      context.setResult(new DrawingJobResult(timestamp, emptyList()));
+      context.setResult(new DrawingJobResult(timestamp, emptyList(), random));
     } else {
-      context.setResult(new DrawingJobResult(timestamp, (winners)));
+      context.setResult(new DrawingJobResult(timestamp, (winners), random));
     }
   }
 

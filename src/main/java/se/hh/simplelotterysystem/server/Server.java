@@ -11,6 +11,7 @@ import java.util.List;
 import se.hh.simplelotterysystem.data.DrawingRegistrationRequest;
 import se.hh.simplelotterysystem.data.DrawingRegistrationResponse;
 import se.hh.simplelotterysystem.data.HistoricalDataRequest;
+import se.hh.simplelotterysystem.data.HistoricalDataResponse;
 import se.hh.simplelotterysystem.service.LotteryService;
 
 public class Server implements ClientSessionEventHandler {
@@ -47,8 +48,8 @@ public class Server implements ClientSessionEventHandler {
   }
 
   @Override
-  public void onRequestHistoricalData(ClientSession session, HistoricalDataRequest request) {
-    // TODO: Handle historical data request
+  public HistoricalDataResponse onRequestHistoricalData(ClientSession session, HistoricalDataRequest request) {
+    return lotteryService.retrieveHistoricalData(request);
   }
 
   @Override
