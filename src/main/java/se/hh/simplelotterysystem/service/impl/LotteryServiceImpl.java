@@ -32,6 +32,7 @@ import se.hh.simplelotterysystem.data.DrawingRegistrationRequest;
 import se.hh.simplelotterysystem.data.DrawingRegistrationResponse;
 import se.hh.simplelotterysystem.data.HistoricalDataDto;
 import se.hh.simplelotterysystem.data.HistoricalDataResponse;
+import se.hh.simplelotterysystem.email.GmailSender;
 import se.hh.simplelotterysystem.job.DrawingJob;
 import se.hh.simplelotterysystem.job.data.DrawingJobResult;
 import se.hh.simplelotterysystem.model.LotteryHistory;
@@ -41,6 +42,8 @@ import se.hh.simplelotterysystem.service.LotteryService;
 public class LotteryServiceImpl implements LotteryService {
 
   private static final double PARTICIPATION_FEE = 100.0;
+
+  private final GmailSender gmailSender = new GmailSender();
 
   private final Scheduler scheduler;
   private final Map<LocalDateTime, List<Map<String, Set<Integer>>>> drawingSlots = new HashMap<>();
@@ -267,5 +270,29 @@ public class LotteryServiceImpl implements LotteryService {
             + " and the prize pool per person: "
             + prizePool / winners.size());
     // TODO: Notify winners via email
+
+    for (String winner : winners) {
+      try {
+        gmailSender.sendEmail(
+            winner,
+            "🎉 Congratulations! You're a Winner! 🎉",
+            "Hello "
+                + winner
+                + ",\n\n"
+                + "Congratulations! You are one of the lucky winners of our contest!\n\n"
+                + "The winning number was: "
+                + drawnLuckyNumber
+                + ".\n"
+                + "Your share of the prize pool is: $"
+                + (prizePool / winners.size())
+                + ".\n\n"
+                + "Thank you for participating, and we hope you enjoy your prize!\n\n"
+                + "Best regards,\n"
+                + "Your Simple Lottery team");
+      } catch (Exception e) {
+        throw new RuntimeException("Sending email failed: " + e.getMessage(), e);
+      }
+    }
+    log(INFO, "Winners notified via email!");
   }
 }
