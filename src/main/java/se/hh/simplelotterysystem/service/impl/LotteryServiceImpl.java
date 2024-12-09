@@ -80,7 +80,7 @@ public class LotteryServiceImpl implements LotteryService {
       LocalDateTime startTimestamp, LocalDateTime endTimestamp) {
     LocalDateTime startLocalDateTime = startTimestamp.truncatedTo(ChronoUnit.MINUTES);
     LocalDateTime endLocalDateTime = endTimestamp.truncatedTo(ChronoUnit.MINUTES);
-    Map<LocalDateTime, HistoricalDataDto> historicalData =
+    Map<String, HistoricalDataDto> historicalData =
         getHistoricalData(startLocalDateTime, endLocalDateTime);
 
     return ResponseEntity.ok(new HistoricalDataResponse(historicalData));
@@ -205,9 +205,9 @@ public class LotteryServiceImpl implements LotteryService {
     awardAmounts.put(dateTime, awardAmounts.get(dateTime) + PARTICIPATION_FEE);
   }
 
-  private Map<LocalDateTime, HistoricalDataDto> getHistoricalData(
+  private Map<String, HistoricalDataDto> getHistoricalData(
       LocalDateTime startLocalDateTime, LocalDateTime endLocalDateTime) {
-    Map<LocalDateTime, HistoricalDataDto> historicalData = new HashMap<>();
+    Map<String, HistoricalDataDto> historicalData = new HashMap<>();
     List<LocalDateTime> localDateTimes = getLocalDateTimes(startLocalDateTime, endLocalDateTime);
     for (LocalDateTime localDateTime : localDateTimes) {
       if (history.containsKey(localDateTime)) {
@@ -217,7 +217,7 @@ public class LotteryServiceImpl implements LotteryService {
                 lotteryHistory.drawnLuckyNumber() == null ? -1 : lotteryHistory.drawnLuckyNumber(),
                 lotteryHistory.winners().size(),
                 lotteryHistory.prizePool());
-        historicalData.put(localDateTime, historicalDataDto);
+        historicalData.put(localDateTime.toString(), historicalDataDto);
       }
     }
     return historicalData;
@@ -252,7 +252,7 @@ public class LotteryServiceImpl implements LotteryService {
 
       // TODO: LocalDateTime updatedLocalDateTime = timestamp.plusHours(1);
       LocalDateTime updatedLocalDateTime = timestamp.plusMinutes(1); // test purposes
-
+      awardAmounts.putIfAbsent(updatedLocalDateTime, 0.0);
       awardAmounts.put(updatedLocalDateTime, awardAmounts.get(updatedLocalDateTime) + awardAmount);
     }
   }
